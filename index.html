@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWIPT-NOMA Performance Analysis</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    header {
+      background-color: #00796b;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2.2em;
+    }
+    h2 {
+      color: #00796b;
+      border-bottom: 2px solid #00796b;
+      padding-bottom: 5px;
+      margin-top: 40px;
+    }
+    .container {
+      background-color: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    .chart-container {
+      width: 100%;
+      height: 400px;
+      margin: 20px 0;
+    }
+    .user-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .control-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #00796b;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #004d40;
+    }
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%; /* 16:9 */
+      height: 0;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      padding: 20px;
+      color: #666;
+    }
+    .team {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .team-member {
+      text-align: center;
+    }
+    .video-fallback {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      background: #f5f5f5;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dynamic Power Allocation in SWIPT-NOMA Systems</h1>
+    <p>Performance analysis of cooperative SWIPT-NOMA for 6G wireless networks</p>
+  </header>
+
+  <div class="container">
+    <h2>Project Overview</h2>
+    <p>This project investigates the performance of Simultaneous Wireless Information and Power Transfer (SWIPT) in Non-Orthogonal Multiple Access (NOMA) systems with dynamic power allocation. The analysis focuses on user fairness and communication efficiency across varying distances in future 6G and IoT networks.</p>
+    
+    <p>Key features analyzed:</p>
+    <ul>
+      <li>SINR performance vs. transmit power</li>
+      <li>Outage probability for users at different distances</li>
+      <li>Achievable data rates under dynamic power allocation</li>
+      <li>User movement simulation within the coverage area</li>
+    </ul>
+  </div>
+
+  <div class="container">
+    <h2>System Parameters</h2>
+    <div class="user-controls">
+      <div class="control-group">
+        <label for="nearDist">Near User Distance (m)</label>
+        <input type="number" id="nearDist" value="5" min="1" step="0.1">
+      </div>
+      <div class="control-group">
+        <label for="midDist">Middle User Distance (m)</label>
+        <input type="number" id="midDist" value="20" min="1" step="0.1">
+      </div>
+      <div class="control-group">
+        <label for="farDist">Far User Distance (m)</label>
+        <input type="number" id="farDist" value="50" min="1" step="0.1">
+      </div>
+      <div class="control-group">
+        <label for="noisePower">Noise Power (N0)</label>
+        <input type="number" id="noisePower" value="0.001" min="0.0001" step="0.0001">
+      </div>
+    </div>
+    <button onclick="runAnalysis()">Run Analysis</button>
+  </div>
+
+  <div class="container">
+    <h2>SINR Performance</h2>
+    <div class="chart-container">
+      <canvas id="sinrChart"></canvas>
+    </div>
+    <p>The Signal-to-Interference-plus-Noise Ratio (SINR) shows the quality of the communication link for users at different distances from the base station. Near users typically experience higher SINR due to lower path loss.</p>
+  </div>
+
+  <div class="container">
+    <h2>Outage Probability</h2>
+    <div class="chart-container">
+      <canvas id="outageChart"></canvas>
+    </div>
+    <p>Outage probability represents the likelihood that a user's SINR falls below a threshold (5 dB in this analysis). Far users experience higher outage probabilities, especially at lower transmit power levels.</p>
+  </div>
+
+  <div class="container">
+    <h2>Achievable Rate</h2>
+    <div class="chart-container">
+      <canvas id="rateChart"></canvas>
+    </div>
+    <p>The achievable rate (in bps/Hz) demonstrates the spectral efficiency of the system. The logarithmic relationship with SINR shows diminishing returns at higher power levels.</p>
+  </div>
+
+  <div class="container">
+    <h2>User Distribution Visualization</h2>
+    <div id="3dPlot" class="chart-container"></div>
+    <p>This 3D visualization shows the relative positions of users within the coverage area. The base station is at the center (red), with near (green), middle (purple), and far (blue) users positioned along the x-axis.</p>
+  </div>
+
+  <div class="container">
+    <h2>User Movement Simulation</h2>
+    <div class="video-container">
+      <iframe 
+        id="simulationVideo"
+        src="https://www.youtube.com/embed/vSnnCVMBQ0c?enablejsapi=1&rel=0"
+        title="SWIPT-NOMA Simulation Video"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+    <div class="video-fallback">
+      <p>Video cannot be loaded. Please try one of these options:</p>
+      <a href="https://youtu.be/vSnnCVMBQ0c" target="_blank" style="color: #00796b; text-decoration: none;">
+        ▶ Watch on YouTube
+      </a>
+      <span style="margin:0 10px">|</span>
+      <a href="videos/simulation.mp4" download style="color: #00796b; text-decoration: none;">
+        ⬇ Download Video
+      </a>
+    </div>
+    <p>The simulation demonstrates how dynamic power allocation adapts to user mobility. The middle user moves between 10m and 30m from the base station while maintaining connectivity.</p>
+  </div>
+
+  <footer>
+    <h3>Project Team</h3>
+    <div class="team-member">
+        <strong>Prof. Budhaditya Bhattacharya(Project Guide, SENSE School, VIT Vellore)</strong>
+      </div>
+    <div class="team">
+      <div class="team-member">
+        <strong>Chandresh Rajpoot</strong>
+      </div>
+      <div class="team-member">
+        <strong>Aditya Dabade</strong>
+      </div>
+      <div class="team-member">
+        <strong>Nirmalaya Chakraborty</strong>
+      </div>
+    </div>
+    <p>© 2025 SWIPT-NOMA Research Project</p>
+  </footer>
+
+  <script>
+    // System parameters
+    const params = {
+      P_dB: Array.from({length: 26}, (_, i) => -10 + i * 2),
+      d0: 1,
+      alpha: 3,
+      SINR_threshold: 5
+    };
+
+    // Initialize charts
+    let sinrChart, outageChart, rateChart;
+
+    function initCharts() {
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Transmit Power (dB)'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Value'
+            }
+          }
+        }
+      };
+
+      // SINR Chart
+      const sinrCtx = document.getElementById('sinrChart').getContext('2d');
+      sinrChart = new Chart(sinrCtx, {
+        type: 'line',
+        data: { labels: params.P_dB, datasets: [] },
+        options: {
+          ...chartOptions,
+          plugins: {
+            title: {
+              display: true,
+              text: 'SINR vs Transmit Power'
+            }
+          },
+          scales: {
+            ...chartOptions.scales,
+            y: {
+              ...chartOptions.scales.y,
+              title: {
+                display: true,
+                text: 'log10(SINR)'
+              }
+            }
+          }
+        }
+      });
+
+      // Outage Chart
+      const outageCtx = document.getElementById('outageChart').getContext('2d');
+      outageChart = new Chart(outageCtx, {
+        type: 'line',
+        data: { labels: params.P_dB, datasets: [] },
+        options: {
+          ...chartOptions,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Outage Probability vs Transmit Power'
+            }
+          },
+          scales: {
+            ...chartOptions.scales,
+            y: {
+              ...chartOptions.scales.y,
+              min: 0,
+              max: 1.2,
+              title: {
+                display: true,
+                text: 'Outage Probability'
+              }
+            }
+          }
+        }
+      });
+
+      // Rate Chart
+      const rateCtx = document.getElementById('rateChart').getContext('2d');
+      rateChart = new Chart(rateCtx, {
+        type: 'line',
+        data: { labels: params.P_dB, datasets: [] },
+        options: {
+          ...chartOptions,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Achievable Rate vs Transmit Power'
+            }
+          },
+          scales: {
+            ...chartOptions.scales,
+            y: {
+              ...chartOptions.scales.y,
+              title: {
+                display: true,
+                text: 'Rate (bps/Hz)'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function calculateMetrics() {
+      const nearDist = parseFloat(document.getElementById('nearDist').value);
+      const midDist = parseFloat(document.getElementById('midDist').value);
+      const farDist = parseFloat(document.getElementById('farDist').value);
+      const N0 = parseFloat(document.getElementById('noisePower').value);
+
+      // Calculate path loss
+      const PL_near = Math.pow(nearDist / params.d0, -params.alpha);
+      const PL_mid = Math.pow(midDist / params.d0, -params.alpha);
+      const PL_far = Math.pow(farDist / params.d0, -params.alpha);
+
+      // Convert power to linear scale
+      const P = params.P_dB.map(p => Math.pow(10, p / 10));
+
+      // Calculate SINR
+      const SINR_near = P.map(p => (p * PL_near) / N0);
+      const SINR_mid = P.map(p => (p * PL_mid) / N0);
+      const SINR_far = P.map(p => (p * PL_far) / N0);
+
+      // Scale middle user SINR for better visualization (as in MATLAB code)
+      const SINR_mid_scaled = SINR_mid.map(x => x * 10);
+
+      // Calculate outage probability
+      const Outage_near = SINR_near.map(x => x < params.SINR_threshold ? 1 : 0);
+      const Outage_mid = SINR_mid.map(x => x < params.SINR_threshold ? 1 : 0);
+      const Outage_far = SINR_far.map(x => x < params.SINR_threshold ? 1 : 0);
+
+      // Calculate achievable rate
+      const Rate_near = SINR_near.map(x => Math.log2(1 + x));
+      const Rate_mid = SINR_mid.map(x => Math.log2(1 + x));
+      const Rate_far = SINR_far.map(x => Math.log2(1 + x));
+
+      return {
+        SINR_near: SINR_near.map(x => Math.log10(x)),
+        SINR_mid: SINR_mid_scaled.map(x => Math.log10(x)),
+        SINR_far: SINR_far.map(x => Math.log10(x)),
+        Outage_near,
+        Outage_mid,
+        Outage_far,
+        Rate_near,
+        Rate_mid,
+        Rate_far,
+        distances: { nearDist, midDist, farDist }
+      };
+    }
+
+    function updateCharts(metrics) {
+      // Update SINR chart
+      sinrChart.data.datasets = [
+        {
+          label: `Near User (${metrics.distances.nearDist}m)`,
+          data: metrics.SINR_near,
+          borderColor: 'red',
+          backgroundColor: 'rgba(255, 0, 0, 0.1)',
+          borderWidth: 2,
+          tension: 0.1
+        },
+        {
+          label: `Middle User (${metrics.distances.midDist}m) Scaled`,
+          data: metrics.SINR_mid,
+          borderColor: 'green',
+          backgroundColor: 'rgba(0, 128, 0, 0.1)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          tension: 0.1
+        },
+        {
+          label: `Far User (${metrics.distances.farDist}m)`,
+          data: metrics.SINR_far,
+          borderColor: 'blue',
+          backgroundColor: 'rgba(0, 0, 255, 0.1)',
+          borderWidth: 2,
+          tension: 0.1
+        }
+      ];
+      sinrChart.update();
+
+      // Update Outage chart
+      outageChart.data.datasets = [
+        {
+          label: `Near User (${metrics.distances.nearDist}m)`,
+          data: metrics.Outage_near,
+          borderColor: 'red',
+          backgroundColor: 'rgba(255, 0, 0, 0.1)',
+          borderWidth: 2
+        },
+        {
+          label: `Middle User (${metrics.distances.midDist}m)`,
+          data: metrics.Outage_mid,
+          borderColor: 'green',
+          backgroundColor: 'rgba(0, 128, 0, 0.1)',
+          borderWidth: 2
+        },
+        {
+          label: `Far User (${metrics.distances.farDist}m)`,
+          data: metrics.Outage_far,
+          borderColor: 'blue',
+          backgroundColor: 'rgba(0, 0, 255, 0.1)',
+          borderWidth: 2
+        }
+      ];
+      outageChart.update();
+
+      // Update Rate chart
+      rateChart.data.datasets = [
+        {
+          label: `Near User (${metrics.distances.nearDist}m)`,
+          data: metrics.Rate_near,
+          borderColor: 'red',
+          backgroundColor: 'rgba(255, 0, 0, 0.1)',
+          borderWidth: 2,
+          tension: 0.1
+        },
+        {
+          label: `Middle User (${metrics.distances.midDist}m)`,
+          data: metrics.Rate_mid,
+          borderColor: 'green',
+          backgroundColor: 'rgba(0, 128, 0, 0.1)',
+          borderWidth: 2,
+          tension: 0.1
+        },
+        {
+          label: `Far User (${metrics.distances.farDist}m)`,
+          data: metrics.Rate_far,
+          borderColor: 'blue',
+          backgroundColor: 'rgba(0, 0, 255, 0.1)',
+          borderWidth: 2,
+          tension: 0.1
+        }
+      ];
+      rateChart.update();
+    }
+
+    function create3DPlot(distances) {
+      // Generate circle points for coverage area
+      const theta = Array.from({length: 100}, (_, i) => i * 2 * Math.PI / 100);
+      const circle_x = theta.map(t => Math.cos(t) * distances.farDist);
+      const circle_y = theta.map(t => Math.sin(t) * distances.farDist);
+      const circle_z = theta.map(() => 0);
+
+      const data = [
+        {
+          type: 'scatter3d',
+          mode: 'lines',
+          x: circle_x,
+          y: circle_y,
+          z: circle_z,
+          line: { color: 'black', width: 2, dash: 'dash' },
+          name: 'Coverage Area'
+        },
+        {
+          type: 'scatter3d',
+          mode: 'markers',
+          x: [0],
+          y: [0],
+          z: [0],
+          marker: { color: 'red', size: 8 },
+          name: 'Base Station'
+        },
+        {
+          type: 'scatter3d',
+          mode: 'markers',
+          x: [distances.nearDist],
+          y: [0],
+          z: [0],
+          marker: { color: 'green', size: 8 },
+          name: 'Near User'
+        },
+        {
+          type: 'scatter3d',
+          mode: 'markers',
+          x: [distances.midDist],
+          y: [0],
+          z: [0],
+          marker: { color: 'purple', size: 8 },
+          name: 'Middle User'
+        },
+        {
+          type: 'scatter3d',
+          mode: 'markers',
+          x: [distances.farDist],
+          y: [0],
+          z: [0],
+          marker: { color: 'blue', size: 8 },
+          name: 'Far User'
+        }
+      ];
+
+      const layout = {
+        title: '3D User Distribution',
+        scene: {
+          xaxis: { title: 'X-axis (m)' },
+          yaxis: { title: 'Y-axis (m)' },
+          zaxis: { title: 'Height (m)' }
+        },
+        margin: { l: 0, r: 0, b: 0, t: 40 }
+      };
+
+      Plotly.newPlot('3dPlot', data, layout);
+    }
+
+    function runAnalysis() {
+      const metrics = calculateMetrics();
+      updateCharts(metrics);
+      create3DPlot(metrics.distances);
+      
+      // Video fallback detection
+      const video = document.getElementById('simulationVideo');
+      video.onerror = function() {
+        document.querySelector('.video-fallback').style.display = 'block';
+      };
+    }
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      initCharts();
+      runAnalysis();
+    });
+  </script>
+</body>
+</html>
